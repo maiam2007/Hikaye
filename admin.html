@@ -188,7 +188,7 @@
       images.push(img);
     }
 
-    const compiler = new window.MINDAR.IMAGE.Compiler();
+    const compiler = new window.MINDAR.IMAGE.OfflineCompiler();
     await compiler.compileImageTargets(images, (progress) => {
       statusEl.textContent = `🧩 جاري التجهيز... ${Math.round(progress)}%`;
     });
@@ -283,7 +283,7 @@
 
         successCount++;
         nextIndex++;
-    const compiler = new window.MINDAR.IMAGE.OfflineCompiler();
+
       } catch (err) {
         statusEl.style.color = 'red';
         statusEl.textContent = `❌ صار خطأ بالصورة ${i + 1}: ${err.message}`;
@@ -292,7 +292,12 @@
       }
     }
 
-    await compileAndUploadTargets(bookNumber, password, statusEl);
+    try {
+      await compileAndUploadTargets(bookNumber, password, statusEl);
+    } catch (err) {
+      statusEl.style.color = 'red';
+      statusEl.textContent = '❌ خطأ بتجهيز ملف التعرف: ' + err.message;
+    }
 
     document.getElementById('bookNumber').value = '';
     document.getElementById('pwd').value = '';
