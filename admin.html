@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hikaye - لوحة التحكم</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
 <style>
   body {
     font-family: 'Tahoma', sans-serif;
@@ -155,6 +156,74 @@
     return data[0].target_index + 1;
   }
 
+  async function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function compileAndUploadTargets(bookNumber, password, statusEl) {
+    statusEl.style.color = '#333';
+    statusEl.textContent = '🧩 جاري تجهيز ملف التعرف على الصور...';
+
+    const { data: rows, error } = await supabaseClient
+      .from('photobooks')
+      .select('image_url, target_index')
+      .eq('book_number', bookNumber)
+      .order('target_index', { ascending: true });
+
+    if (error || !rows || rows.length === 0) {
+      statusEl.style.color = 'red';
+      statusEl.textContent = '❌ ما قدرت أجيب صور الفوتوبوك لتجهيز ملف التعرف';
+      return;
+    }
+
+    const images = [];
+    for (const row of rows) {
+      const img = await loadImage(row.image_url);
+      images.push(img);
+    }
+
+    const compiler = new window.MINDAR.IMAGE.Compiler();
+    await compiler.compileImageTargets(images, (progress) => {
+      statusEl.textContent = `🧩 جاري التجهيز... ${Math.round(progress)}%`;
+    });
+
+    const buffer = await compiler.exportData();
+    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+
+    const formData = new FormData();
+    formData.append('password', password);
+    formData.append('bookNumber', bookNumber);
+    formData.append('mindFile', blob, `${bookNumber}.mind`);
+
+    const response = await fetch(
+      'https://ptzuauxjftwfsyjohogi.supabase.co/functions/v1/upload-targets',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+    if (!response.ok) {
+      statusEl.style.color = 'red';
+      statusEl.textContent = '❌ خطأ برفع ملف التعرف: ' + (result.error || '');
+      return;
+    }
+
+    statusEl.style.color = 'green';
+    statusEl.textContent = `✅ تم رفع كل شي بنجاح للفوتوبوك رقم ${bookNumber} (بما فيه ملف التعرف على الصور)`;
+  }
+
   async function addPhotobook() {
     const bookNumber = document.getElementById('bookNumber').value;
     const password = document.getElementById('pwd').value;
@@ -223,8 +292,7 @@
       }
     }
 
-    statusEl.style.color = 'green';
-    statusEl.textContent = `✅ تم رفع ${successCount} صورة وفيديو بنجاح للفوتوبوك رقم ${bookNumber}`;
+    await compileAndUploadTargets(bookNumber, password, statusEl);
 
     document.getElementById('bookNumber').value = '';
     document.getElementById('pwd').value = '';
