@@ -7,75 +7,93 @@ body { margin: 0; overflow: hidden; background: #000; }
 #myVideo { max-width: 100%; max-height: 85vh; }
 #playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
 #errorMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
+#loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
 </style>
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-<a-entity id="target" mindar-image-target="targetIndex: 0"></a-entity>
-</a-scene>
+
+<div id="loadingMsg">جاري التحميل...</div>
+<div id="arContainer"></div>
+
 <div id="videoOverlay">
 <video id="myVideo" playsinline webkit-playsinline controls></video>
 <button id="playBtn">▶</button>
 </div>
 <div id="errorMsg">هذي الصورة مو مرتبطة بأي فيديو حالياً</div>
+
 <script>
-const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
+  const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const loadingMsg = document.querySelector('#loadingMsg');
+  const arContainer = document.querySelector('#arContainer');
+  const overlay = document.querySelector('#videoOverlay');
+  const video = document.querySelector('#myVideo');
+  const playBtn = document.querySelector('#playBtn');
+  const errorMsg = document.querySelector('#errorMsg');
 
-const sceneEl = document.querySelector('a-scene');
-const overlay = document.querySelector('#videoOverlay');
-const video = document.querySelector('#myVideo');
-const playBtn = document.querySelector('#playBtn');
-const errorMsg = document.querySelector('#errorMsg');
+  let videoUrl = null;
 
-let videoUrl = null;
+  async function loadSceneFromCode() {
+    const params = new URLSearchParams(window.location.search);
+    const imageCode = params.get('code');
 
-async function loadVideoFromCode() {
-  const params = new URLSearchParams(window.location.search);
-  const imageCode = params.get('code');
+    if (!imageCode) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'ما فيه كود صورة بالرابط';
+      errorMsg.style.display = 'flex';
+      return;
+    }
 
-  if (!imageCode) {
-    errorMsg.textContent = 'ما فيه كود صورة بالرابط';
-    errorMsg.style.display = 'flex';
-    return;
+    const { data, error } = await supabaseClient
+      .from('photobooks')
+      .select('book_number, target_index, video_url')
+      .eq('image_code', imageCode)
+      .single();
+
+    if (error || !data) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'هذي الصورة مو مرتبطة بأي فيديو حالياً';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    videoUrl = data.video_url;
+    video.src = videoUrl;
+
+    const mindFileUrl = `${SUPABASE_URL}/storage/v1/object/public/targets/${data.book_number}.mind`;
+
+    arContainer.innerHTML = `
+      <a-scene mindar-image="imageTargetSrc: ${mindFileUrl};" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-entity id="target" mindar-image-target="targetIndex: ${data.target_index}"></a-entity>
+      </a-scene>
+    `;
+
+    const sceneEl = arContainer.querySelector('a-scene');
+    loadingMsg.style.display = 'none';
+
+    sceneEl.addEventListener('renderstart', function() {
+      const target = document.querySelector('#target');
+      target.addEventListener('targetFound', function() {
+        if (!videoUrl) return;
+        sceneEl.style.display = 'none';
+        overlay.style.display = 'flex';
+      });
+    });
   }
 
-  const { data, error } = await supabaseClient
-    .from('photobooks')
-    .select('video_url')
-    .eq('image_code', imageCode)
-    .single();
+  loadSceneFromCode();
 
-  if (error || !data) {
-    errorMsg.textContent = 'هذي الصورة مو مرتبطة بأي فيديو حالياً';
-    errorMsg.style.display = 'flex';
-    return;
-  }
-
-  videoUrl = data.video_url;
-  video.src = videoUrl;
-}
-
-loadVideoFromCode();
-
-sceneEl.addEventListener('renderstart', function() {
-const target = document.querySelector('#target');
-target.addEventListener('targetFound', function() {
-if (!videoUrl) return;
-sceneEl.style.display = 'none';
-overlay.style.display = 'flex';
-});
-});
-playBtn.addEventListener('click', function() {
-video.play();
-playBtn.style.display = 'none';
-});
+  playBtn.addEventListener('click', function() {
+    video.play();
+    playBtn.style.display = 'none';
+  });
 </script>
+
 </body>
 </html>
