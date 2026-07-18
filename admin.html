@@ -61,21 +61,11 @@
     text-align: center;
     font-weight: bold;
   }
-  #lockScreen {
-    text-align: center;
-  }
 </style>
 </head>
 <body>
 
-<div class="card" id="lockScreen">
-  <h1>Hikaye</h1>
-  <label>كلمة السر</label>
-  <input type="password" id="pwd" />
-  <button onclick="checkPassword()">دخول</button>
-</div>
-
-<div class="card" id="mainPanel" style="display:none;">
+<div class="card" id="mainPanel">
   <h1>Hikaye - إضافة فوتوبوك</h1>
 
   <label>رقم الفوتوبوك</label>
@@ -87,37 +77,17 @@
   <label>الفيديو</label>
   <input type="file" id="videoFile" accept="video/*" />
 
+  <label>كلمة السر</label>
+  <input type="password" id="pwd" placeholder="كلمة سر الرفع" />
+
   <button id="submitBtn" onclick="addPhotobook()">رفع</button>
 
   <div id="status"></div>
 </div>
 
 <script>
-  const ADMIN_PASSWORD = "mamarm2007";
-
-  function checkPassword() {
-    const entered = document.getElementById('pwd').value;
-    if (entered === ADMIN_PASSWORD) {
-      document.getElementById('lockScreen').style.display = 'none';
-      document.getElementById('mainPanel').style.display = 'block';
-    } else {
-      alert('كلمة السر غلط');
-    }
-  }
-
   const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
-
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  function randomCode(length = 8) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
 
   async function addPhotobook() {
     const bookNumber = document.getElementById('bookNumber').value;
@@ -166,6 +136,7 @@
       document.getElementById('bookNumber').value = '';
       document.getElementById('imageFile').value = '';
       document.getElementById('videoFile').value = '';
+      document.getElementById('pwd').value = '';
 
     } catch (err) {
       statusEl.style.color = 'red';
@@ -175,5 +146,6 @@
     }
   }
 </script>
+
 </body>
 </html>
