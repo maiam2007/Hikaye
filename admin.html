@@ -93,10 +93,11 @@
 </div>
 
 <script>
-  // ⚠️ عدّل كلمة السر هنا لأي شي تحبه
-  const ADMIN_PASSWORD = "ةmamarm2007";
+  // ⚠️⚠️⚠️ غيّر السطر اللي تحت بس، لا تلمس أي شي ثاني ⚠️⚠️⚠️
+  const ADMIN_PASSWORD = "mamarm2007";
+  // ⚠️⚠️⚠️ لازم تبقى بين علامتي تنصيص "  " وتنتهي بفاصلة منقوطة ; ⚠️⚠️⚠️
 
-  function checkPassword(mamarm2007) {
+  function checkPassword() {
     const entered = document.getElementById('pwd').value;
     if (entered === ADMIN_PASSWORD) {
       document.getElementById('lockScreen').style.display = 'none';
@@ -145,25 +146,21 @@
       const imagePath = `${bookNumber}-${imageCode}.${imageExt}`;
       const videoPath = `${bookNumber}-${imageCode}.${videoExt}`;
 
-      // رفع الصورة
       statusEl.textContent = 'جاري رفع الصورة...';
       const { error: imgErr } = await supabase.storage
         .from('hikaye-media')
         .upload(imagePath, imageFile);
       if (imgErr) throw imgErr;
 
-      // رفع الفيديو
       statusEl.textContent = 'جاري رفع الفيديو...';
       const { error: vidErr } = await supabase.storage
         .from('Videossss')
         .upload(videoPath, videoFile);
       if (vidErr) throw vidErr;
 
-      // جلب الروابط العامة
       const { data: imgUrlData } = supabase.storage.from('hikaye-media').getPublicUrl(imagePath);
       const { data: vidUrlData } = supabase.storage.from('Videossss').getPublicUrl(videoPath);
 
-      // إضافة الصف بقاعدة البيانات
       statusEl.textContent = 'جاري الحفظ بقاعدة البيانات...';
       const { error: insertErr } = await supabase
         .from('photobooks')
