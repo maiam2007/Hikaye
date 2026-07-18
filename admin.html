@@ -108,7 +108,7 @@
   const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function randomCode(length = 8) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -145,22 +145,22 @@
       const videoPath = `${bookNumber}-${imageCode}.${videoExt}`;
 
       statusEl.textContent = 'جاري رفع الصورة...';
-      const { error: imgErr } = await supabase.storage
+      const { error: imgErr } = await supabaseClient.storage
         .from('hikaye-media')
         .upload(imagePath, imageFile);
       if (imgErr) throw imgErr;
 
       statusEl.textContent = 'جاري رفع الفيديو...';
-      const { error: vidErr } = await supabase.storage
+      const { error: vidErr } = await supabaseClient.storage
         .from('Videossss')
         .upload(videoPath, videoFile);
       if (vidErr) throw vidErr;
 
-      const { data: imgUrlData } = supabase.storage.from('hikaye-media').getPublicUrl(imagePath);
-      const { data: vidUrlData } = supabase.storage.from('Videossss').getPublicUrl(videoPath);
+      const { data: imgUrlData } = supabaseClient.storage.from('hikaye-media').getPublicUrl(imagePath);
+      const { data: vidUrlData } = supabaseClient.storage.from('Videossss').getPublicUrl(videoPath);
 
       statusEl.textContent = 'جاري الحفظ بقاعدة البيانات...';
-      const { error: insertErr } = await supabase
+      const { error: insertErr } = await supabaseClient
         .from('photobooks')
         .insert([{
           book_number: bookNumber,
