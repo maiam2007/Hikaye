@@ -6,8 +6,8 @@ body { margin: 0; overflow: hidden; background: #000; }
 #videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
 #myVideo { max-width: 100%; max-height: 85vh; }
 #playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
-#errorMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
-#loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
+#errorMsg, #loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
+#loadingMsg { display: flex; }
 </style>
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -22,7 +22,7 @@ body { margin: 0; overflow: hidden; background: #000; }
 <video id="myVideo" playsinline webkit-playsinline controls></video>
 <button id="playBtn">▶</button>
 </div>
-<div id="errorMsg">هذي الصورة مو مرتبطة بأي فيديو حالياً</div>
+<div id="errorMsg">هذا الفوتوبوك مو موجود</div>
 
 <script>
   const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
@@ -36,41 +36,45 @@ body { margin: 0; overflow: hidden; background: #000; }
   const playBtn = document.querySelector('#playBtn');
   const errorMsg = document.querySelector('#errorMsg');
 
-  let videoUrl = null;
+  let videoMap = {};
 
-  async function loadSceneFromCode() {
+  async function loadSceneFromBook() {
     const params = new URLSearchParams(window.location.search);
-    const imageCode = params.get('code');
+    const bookNumber = params.get('book');
 
-    if (!imageCode) {
+    if (!bookNumber) {
       loadingMsg.style.display = 'none';
-      errorMsg.textContent = 'ما فيه كود صورة بالرابط';
+      errorMsg.textContent = 'ما فيه رقم فوتوبوك بالرابط';
       errorMsg.style.display = 'flex';
       return;
     }
 
     const { data, error } = await supabaseClient
       .from('photobooks')
-      .select('book_number, target_index, video_url')
-      .eq('image_code', imageCode)
-      .single();
+      .select('target_index, video_url')
+      .eq('book_number', bookNumber);
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       loadingMsg.style.display = 'none';
-      errorMsg.textContent = 'هذي الصورة مو مرتبطة بأي فيديو حالياً';
+      errorMsg.textContent = 'هذا الفوتوبوك مو موجود';
       errorMsg.style.display = 'flex';
       return;
     }
 
-    videoUrl = data.video_url;
-    video.src = videoUrl;
+    data.forEach(row => {
+      videoMap[row.target_index] = row.video_url;
+    });
 
-    const mindFileUrl = `${SUPABASE_URL}/storage/v1/object/public/targets/${data.book_number}.mind`;
+    const mindFileUrl = `${SUPABASE_URL}/storage/v1/object/public/targets/${bookNumber}.mind`;
+
+    const targetEntities = data.map(row =>
+      `<a-entity class="target" data-index="${row.target_index}" mindar-image-target="targetIndex: ${row.target_index}"></a-entity>`
+    ).join('');
 
     arContainer.innerHTML = `
       <a-scene mindar-image="imageTargetSrc: ${mindFileUrl};" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        <a-entity id="target" mindar-image-target="targetIndex: ${data.target_index}"></a-entity>
+        ${targetEntities}
       </a-scene>
     `;
 
@@ -78,16 +82,21 @@ body { margin: 0; overflow: hidden; background: #000; }
     loadingMsg.style.display = 'none';
 
     sceneEl.addEventListener('renderstart', function() {
-      const target = document.querySelector('#target');
-      target.addEventListener('targetFound', function() {
-        if (!videoUrl) return;
-        sceneEl.style.display = 'none';
-        overlay.style.display = 'flex';
+      const targets = arContainer.querySelectorAll('.target');
+      targets.forEach(target => {
+        target.addEventListener('targetFound', function() {
+          const idx = target.getAttribute('data-index');
+          const url = videoMap[idx];
+          if (!url) return;
+          video.src = url;
+          sceneEl.style.display = 'none';
+          overlay.style.display = 'flex';
+        });
       });
     });
   }
 
-  loadSceneFromCode();
+  loadSceneFromBook();
 
   playBtn.addEventListener('click', function() {
     video.play();
