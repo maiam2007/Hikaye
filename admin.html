@@ -6,6 +6,7 @@
 <title>Hikaye - لوحة التحكم</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <style>
   body {
     font-family: 'Tahoma', sans-serif;
@@ -193,6 +194,74 @@
     });
   }
 
+  // ------- ضغط الفيديو -------
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  let ffmpegInstance = null;
+
+  async function getFfmpeg(statusEl) {
+    if (!ffmpegInstance) {
+      ffmpegInstance = createFFmpeg({ log: false });
+    }
+    if (!ffmpegInstance.isLoaded()) {
+      statusEl.textContent = '⏳ جاري تجهيز أداة الضغط (أول مرة بس)...';
+      await ffmpegInstance.load();
+    }
+    return ffmpegInstance;
+  }
+
+  async function compressVideo(file, statusEl, label, crf) {
+    const ffmpeg = await getFfmpeg(statusEl);
+
+    statusEl.textContent = `🎬 جاري ضغط ${label}...`;
+
+    const inputName = 'input_' + Date.now() + '.mp4';
+    const outputName = 'output_' + Date.now() + '.mp4';
+
+    ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+
+    await ffmpeg.run(
+      '-i', inputName,
+      '-vcodec', 'libx264',
+      '-crf', String(crf),
+      '-preset', 'ultrafast',
+      '-vf', 'scale=720:-2',
+      '-acodec', 'aac',
+      '-b:a', '96k',
+      outputName
+    );
+
+    const data = ffmpeg.FS('readFile', outputName);
+    ffmpeg.FS('unlink', inputName);
+    ffmpeg.FS('unlink', outputName);
+
+    return new Blob([data.buffer], { type: 'video/mp4' });
+  }
+
+  const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+
+  async function compressUnderLimit(file, statusEl, label) {
+    // لو أصلاً تحت الحد، نرفعه بدون ضغط
+    if (file.size <= MAX_SIZE_BYTES) {
+      return file;
+    }
+
+    // نجرب جودات متدرجة لين يوصل تحت 50MB
+    const crfLevels = [28, 32, 36, 40];
+    let lastBlob = null;
+
+    for (const crf of crfLevels) {
+      lastBlob = await compressVideo(file, statusEl, label, crf);
+      if (lastBlob.size <= MAX_SIZE_BYTES) {
+        return lastBlob;
+      }
+    }
+
+    // حتى بعد أعلى ضغط، لو لسا أكبر من الحد، نرجع آخر نسخة مع تحذير
+    statusEl.textContent = `⚠️ ${label} كبير حتى بعد الضغط، جاري المحاولة برضو...`;
+    return lastBlob;
+  }
+  // ------- نهاية كود الضغط -------
+
   async function compileAndUploadTargets(bookNumber, password, statusEl) {
     statusEl.style.color = '#333';
     statusEl.textContent = '🧩 جاري تجهيز ملف التعرف على الصور...';
@@ -299,15 +368,18 @@
     let capturedSecretKey = null;
 
     for (let i = 0; i < pairs.length; i++) {
-      statusEl.textContent = `جاري رفع الصورة ${i + 1} من ${pairs.length}...`;
-
       try {
+        statusEl.textContent = `جاري تجهيز الفيديو ${i + 1} من ${pairs.length}...`;
+        const finalVideo = await compressUnderLimit(pairs[i].videoFile, statusEl, `فيديو ${i + 1}`);
+
+        statusEl.textContent = `جاري رفع الصورة ${i + 1} من ${pairs.length}...`;
+
         const formData = new FormData();
         formData.append('password', password);
         formData.append('bookNumber', bookNumber);
         formData.append('targetIndex', nextIndex);
         formData.append('imageFile', pairs[i].imageFile);
-        formData.append('videoFile', pairs[i].videoFile);
+        formData.append('videoFile', finalVideo, 'video.mp4');
 
         const response = await fetch(
           'https://ptzuauxjftwfsyjohogi.supabase.co/functions/v1/add-photobook',
