@@ -41,22 +41,31 @@ body { margin: 0; overflow: hidden; background: #000; }
   async function loadSceneFromBook() {
     const params = new URLSearchParams(window.location.search);
     const bookNumber = params.get('book');
+    const key = params.get('key');
 
-    if (!bookNumber) {
+    if (!bookNumber || !key) {
       loadingMsg.style.display = 'none';
-      errorMsg.textContent = 'ما فيه رقم فوتوبوك بالرابط';
+      errorMsg.textContent = 'رابط غير صحيح';
       errorMsg.style.display = 'flex';
       return;
     }
 
     const { data, error } = await supabaseClient
       .from('photobooks')
-      .select('target_index, video_url')
+      .select('target_index, video_url, secret_key')
       .eq('book_number', bookNumber);
 
     if (error || !data || data.length === 0) {
       loadingMsg.style.display = 'none';
       errorMsg.textContent = 'هذا الفوتوبوك مو موجود';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    // التحقق من الكود السري قبل عرض أي شي
+    if (data[0].secret_key !== key) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'رابط غير صحيح';
       errorMsg.style.display = 'flex';
       return;
     }
