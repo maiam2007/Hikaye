@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hikaye - لوحة التحكم</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
 <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js" crossorigin="anonymous"></script>
 <style>
   body {
@@ -88,6 +86,27 @@
     color: #6b2737;
     margin-bottom: 5px;
   }
+  #qrResult {
+    margin-top: 20px;
+    text-align: center;
+    display: none;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+  #qrResult img {
+    margin-top: 10px;
+    border-radius: 8px;
+  }
+  #qrResult .linkBox {
+    margin-top: 10px;
+    background: #f9f5f6;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    word-break: break-all;
+    direction: ltr;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -108,6 +127,12 @@
   <button id="submitBtn" onclick="addPhotobook()">رفع كل الصور والفيديوهات</button>
 
   <div id="status"></div>
+
+  <div id="qrResult">
+    <div><strong>رابط وQR كود الفوتوبوك:</strong></div>
+    <div class="linkBox" id="linkText"></div>
+    <img id="qrImage" width="200" height="200" />
+  </div>
 </div>
 
 <script>
@@ -234,11 +259,21 @@
     statusEl.textContent = `✅ تم رفع كل شي بنجاح للفوتوبوك رقم ${bookNumber} (بما فيه ملف التعرف على الصور)`;
   }
 
+  function showQrResult(bookNumber, secretKey) {
+    const url = `https://maiam2007.github.io/Hikaye/index.html?book=${bookNumber}&key=${secretKey}`;
+    document.getElementById('linkText').textContent = url;
+    document.getElementById('qrImage').src =
+      `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+    document.getElementById('qrResult').style.display = 'block';
+  }
+
   async function addPhotobook() {
     const bookNumber = document.getElementById('bookNumber').value;
     const password = document.getElementById('pwd').value;
     const statusEl = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
+
+    document.getElementById('qrResult').style.display = 'none';
 
     const pairDivs = document.querySelectorAll('.pair');
     const pairs = [];
@@ -261,6 +296,7 @@
 
     let nextIndex = await getNextTargetIndex(bookNumber);
     let successCount = 0;
+    let capturedSecretKey = null;
 
     for (let i = 0; i < pairs.length; i++) {
       statusEl.textContent = `جاري رفع الصورة ${i + 1} من ${pairs.length}...`;
@@ -291,6 +327,7 @@
           throw new Error(result.error || 'صار خطأ غير متوقع');
         }
 
+        capturedSecretKey = result.secretKey;
         successCount++;
         nextIndex++;
 
@@ -304,6 +341,9 @@
 
     try {
       await compileAndUploadTargets(bookNumber, password, statusEl);
+      if (capturedSecretKey) {
+        showQrResult(bookNumber, capturedSecretKey);
+      }
     } catch (err) {
       statusEl.style.color = 'red';
       statusEl.textContent = '❌ خطأ بتجهيز ملف التعرف: ' + err.message;
