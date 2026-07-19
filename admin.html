@@ -200,7 +200,10 @@
 
   async function getFfmpeg(statusEl) {
     if (!ffmpegInstance) {
-      ffmpegInstance = createFFmpeg({ log: false });
+      ffmpegInstance = createFFmpeg({
+        log: false,
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+      });
     }
     if (!ffmpegInstance.isLoaded()) {
       statusEl.textContent = '⏳ جاري تجهيز أداة الضغط (أول مرة بس)...';
@@ -240,12 +243,10 @@
   const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
   async function compressUnderLimit(file, statusEl, label) {
-    // لو أصلاً تحت الحد، نرفعه بدون ضغط
     if (file.size <= MAX_SIZE_BYTES) {
       return file;
     }
 
-    // نجرب جودات متدرجة لين يوصل تحت 50MB
     const crfLevels = [28, 32, 36, 40];
     let lastBlob = null;
 
@@ -256,7 +257,6 @@
       }
     }
 
-    // حتى بعد أعلى ضغط، لو لسا أكبر من الحد، نرجع آخر نسخة مع تحذير
     statusEl.textContent = `⚠️ ${label} كبير حتى بعد الضغط، جاري المحاولة برضو...`;
     return lastBlob;
   }
