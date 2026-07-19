@@ -1,362 +1,116 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html>
 <head>
-<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hikaye - لوحة التحكم</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js" crossorigin="anonymous"></script>
 <style>
-  body {
-    font-family: 'Tahoma', sans-serif;
-    background: #f8f4ee;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    padding: 40px 20px;
-  }
-  .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 30px;
-    max-width: 480px;
-    width: 100%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  }
-  h1 {
-    text-align: center;
-    color: #6b2737;
-    margin-bottom: 25px;
-  }
-  label {
-    display: block;
-    margin: 15px 0 6px;
-    font-weight: bold;
-  }
-  input[type="text"], input[type="number"], input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  input[type="file"] {
-    width: 100%;
-  }
-  button {
-    width: 100%;
-    margin-top: 15px;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background: #6b2737;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  button.secondary {
-    background: #ccc;
-    color: #333;
-  }
-  button:disabled {
-    background: #ccc;
-  }
-  #status {
-    margin-top: 15px;
-    text-align: center;
-    font-weight: bold;
-  }
-  .pair {
-    border: 1px solid #eee;
-    border-radius: 10px;
-    padding: 15px;
-    margin-top: 15px;
-    position: relative;
-  }
-  .pair .removeBtn {
-    width: auto;
-    margin-top: 10px;
-    background: #eee;
-    color: #900;
-    font-size: 13px;
-    padding: 6px 10px;
-  }
-  .pairTitle {
-    font-weight: bold;
-    color: #6b2737;
-    margin-bottom: 5px;
-  }
-  #qrResult {
-    margin-top: 20px;
-    text-align: center;
-    display: none;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-  }
-  #qrResult img {
-    margin-top: 10px;
-    border-radius: 8px;
-  }
-  #qrResult .linkBox {
-    margin-top: 10px;
-    background: #f9f5f6;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    word-break: break-all;
-    direction: ltr;
-    text-align: center;
-  }
+body { margin: 0; overflow: hidden; background: #000; }
+#videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
+#myVideo { max-width: 100%; max-height: 85vh; }
+#playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
+#errorMsg, #loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
+#loadingMsg { display: flex; }
 </style>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="card" id="mainPanel">
-  <h1>Hikaye - إضافة فوتوبوك</h1>
+<div id="loadingMsg">جاري التحميل...</div>
+<div id="arContainer"></div>
 
-  <label>رقم الفوتوبوك</label>
-  <input type="number" id="bookNumber" placeholder="مثال: 66" />
-
-  <div id="pairsContainer"></div>
-
-  <button type="button" class="secondary" id="addPairBtn">+ إضافة صورة وفيديو ثانية</button>
-
-  <label>كلمة السر</label>
-  <input type="password" id="pwd" placeholder="كلمة سر الرفع" />
-
-  <button id="submitBtn" onclick="addPhotobook()">رفع كل الصور والفيديوهات</button>
-
-  <div id="status"></div>
-
-  <div id="qrResult">
-    <div><strong>رابط وQR كود الفوتوبوك:</strong></div>
-    <div class="linkBox" id="linkText"></div>
-    <img id="qrImage" width="200" height="200" />
-  </div>
+<div id="videoOverlay">
+<video id="myVideo" playsinline webkit-playsinline controls></video>
+<button id="playBtn">▶</button>
 </div>
+<div id="errorMsg">هذا الفوتوبوك مو موجود</div>
 
 <script>
   const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
-
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let pairCount = 0;
+  const loadingMsg = document.querySelector('#loadingMsg');
+  const arContainer = document.querySelector('#arContainer');
+  const overlay = document.querySelector('#videoOverlay');
+  const video = document.querySelector('#myVideo');
+  const playBtn = document.querySelector('#playBtn');
+  const errorMsg = document.querySelector('#errorMsg');
 
-  function addPairRow() {
-    pairCount++;
-    const id = pairCount;
-    const container = document.getElementById('pairsContainer');
-    const div = document.createElement('div');
-    div.className = 'pair';
-    div.id = 'pair-' + id;
-    div.innerHTML = `
-      <div class="pairTitle">صورة وفيديو رقم ${id}</div>
-      <label>الصورة</label>
-      <input type="file" class="imageFile" accept="image/*" />
-      <label>الفيديو</label>
-      <input type="file" class="videoFile" accept="video/*" />
-      ${id > 1 ? `<button type="button" class="removeBtn" onclick="removePair(${id})">حذف هذي الصورة</button>` : ''}
-    `;
-    container.appendChild(div);
-  }
+  let videoMap = {};
 
-  function removePair(id) {
-    const el = document.getElementById('pair-' + id);
-    if (el) el.remove();
-  }
+  async function loadSceneFromBook() {
+    const params = new URLSearchParams(window.location.search);
+    const bookNumber = params.get('book');
+    const key = params.get('key');
 
-  document.getElementById('addPairBtn').addEventListener('click', addPairRow);
-  addPairRow();
+    if (!bookNumber || !key) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'رابط غير صحيح';
+      errorMsg.style.display = 'flex';
+      return;
+    }
 
-  async function getNextTargetIndex(bookNumber) {
     const { data, error } = await supabaseClient
       .from('photobooks')
-      .select('target_index')
-      .eq('book_number', bookNumber)
-      .order('target_index', { ascending: false })
-      .limit(1);
+      .select('target_index, video_url, secret_key')
+      .eq('book_number', bookNumber);
 
-    if (error || !data || data.length === 0 || data[0].target_index === null) {
-      return 0;
+    if (error || !data || data.length === 0) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'هذا الفوتوبوك مو موجود';
+      errorMsg.style.display = 'flex';
+      return;
     }
-    return data[0].target_index + 1;
-  }
 
-  async function loadImage(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
+    // التحقق من الكود السري قبل عرض أي شي
+    if (data[0].secret_key !== key) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'رابط غير صحيح';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    data.forEach(row => {
+      videoMap[row.target_index] = row.video_url;
+    });
+
+    const mindFileUrl = `${SUPABASE_URL}/storage/v1/object/public/targets/${bookNumber}.mind`;
+
+    const targetEntities = data.map(row =>
+      `<a-entity class="target" data-index="${row.target_index}" mindar-image-target="targetIndex: ${row.target_index}"></a-entity>`
+    ).join('');
+
+    arContainer.innerHTML = `
+      <a-scene mindar-image="imageTargetSrc: ${mindFileUrl};" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        ${targetEntities}
+      </a-scene>
+    `;
+
+    const sceneEl = arContainer.querySelector('a-scene');
+    loadingMsg.style.display = 'none';
+
+    sceneEl.addEventListener('renderstart', function() {
+      const targets = arContainer.querySelectorAll('.target');
+      targets.forEach(target => {
+        target.addEventListener('targetFound', function() {
+          const idx = target.getAttribute('data-index');
+          const url = videoMap[idx];
+          if (!url) return;
+          video.src = url;
+          sceneEl.style.display = 'none';
+          overlay.style.display = 'flex';
+        });
+      });
     });
   }
 
-  async function compileAndUploadTargets(bookNumber, password, statusEl) {
-    statusEl.style.color = '#333';
-    statusEl.textContent = '🧩 جاري تجهيز ملف التعرف على الصور...';
+  loadSceneFromBook();
 
-    const { data: rows, error } = await supabaseClient
-      .from('photobooks')
-      .select('image_url, target_index')
-      .eq('book_number', bookNumber)
-      .order('target_index', { ascending: true });
-
-    if (error || !rows || rows.length === 0) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '❌ ما قدرت أجيب صور الفوتوبوك لتجهيز ملف التعرف';
-      return;
-    }
-
-    const images = [];
-    for (const row of rows) {
-      const img = await loadImage(row.image_url);
-      images.push(img);
-    }
-
-    if (!window.MINDAR || !window.MINDAR.IMAGE) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '❌ مكتبة MindAR ما انحملت صح بالمتصفح';
-      return;
-    }
-
-    const CompilerClass = window.MINDAR.IMAGE.OfflineCompiler || window.MINDAR.IMAGE.Compiler;
-    const compiler = new CompilerClass();
-
-    await compiler.compileImageTargets(images, (progress) => {
-      statusEl.textContent = `🧩 جاري التجهيز... ${Math.round(progress)}%`;
-    });
-
-    const buffer = await compiler.exportData();
-    const blob = new Blob([buffer], { type: 'application/octet-stream' });
-
-    const formData = new FormData();
-    formData.append('password', password);
-    formData.append('bookNumber', bookNumber);
-    formData.append('mindFile', blob, `${bookNumber}.mind`);
-
-    const response = await fetch(
-      'https://ptzuauxjftwfsyjohogi.supabase.co/functions/v1/upload-targets',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'apikey': SUPABASE_ANON_KEY,
-        },
-        body: formData,
-      }
-    );
-
-    const result = await response.json();
-    if (!response.ok) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '❌ خطأ برفع ملف التعرف: ' + (result.error || '');
-      return;
-    }
-
-    statusEl.style.color = 'green';
-    statusEl.textContent = `✅ تم رفع كل شي بنجاح للفوتوبوك رقم ${bookNumber} (بما فيه ملف التعرف على الصور)`;
-  }
-
-  function showQrResult(bookNumber, secretKey) {
-    const url = `https://maiam2007.github.io/Hikaye/index.html?book=${bookNumber}&key=${secretKey}`;
-    document.getElementById('linkText').textContent = url;
-    document.getElementById('qrImage').src =
-      `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
-    document.getElementById('qrResult').style.display = 'block';
-  }
-
-  async function addPhotobook() {
-    const bookNumber = document.getElementById('bookNumber').value;
-    const password = document.getElementById('pwd').value;
-    const statusEl = document.getElementById('status');
-    const submitBtn = document.getElementById('submitBtn');
-
-    document.getElementById('qrResult').style.display = 'none';
-
-    const pairDivs = document.querySelectorAll('.pair');
-    const pairs = [];
-    for (const div of pairDivs) {
-      const imageFile = div.querySelector('.imageFile').files[0];
-      const videoFile = div.querySelector('.videoFile').files[0];
-      if (imageFile && videoFile) {
-        pairs.push({ imageFile, videoFile });
-      }
-    }
-
-    if (!bookNumber || !password || pairs.length === 0) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '⚠️ عبي رقم الفوتوبوك وكلمة السر وصورة+فيديو وحدة على الأقل';
-      return;
-    }
-
-    submitBtn.disabled = true;
-    statusEl.style.color = '#333';
-
-    let nextIndex = await getNextTargetIndex(bookNumber);
-    let successCount = 0;
-    let capturedSecretKey = null;
-
-    for (let i = 0; i < pairs.length; i++) {
-      statusEl.textContent = `جاري رفع الصورة ${i + 1} من ${pairs.length}...`;
-
-      try {
-        const formData = new FormData();
-        formData.append('password', password);
-        formData.append('bookNumber', bookNumber);
-        formData.append('targetIndex', nextIndex);
-        formData.append('imageFile', pairs[i].imageFile);
-        formData.append('videoFile', pairs[i].videoFile);
-
-        const response = await fetch(
-          'https://ptzuauxjftwfsyjohogi.supabase.co/functions/v1/add-photobook',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-              'apikey': SUPABASE_ANON_KEY,
-            },
-            body: formData,
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'صار خطأ غير متوقع');
-        }
-
-        capturedSecretKey = result.secretKey;
-        successCount++;
-        nextIndex++;
-
-      } catch (err) {
-        statusEl.style.color = 'red';
-        statusEl.textContent = `❌ صار خطأ بالصورة ${i + 1}: ${err.message}`;
-        submitBtn.disabled = false;
-        return;
-      }
-    }
-
-    try {
-      await compileAndUploadTargets(bookNumber, password, statusEl);
-      if (capturedSecretKey) {
-        showQrResult(bookNumber, capturedSecretKey);
-      }
-    } catch (err) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '❌ خطأ بتجهيز ملف التعرف: ' + err.message;
-    }
-
-    document.getElementById('bookNumber').value = '';
-    document.getElementById('pwd').value = '';
-    document.getElementById('pairsContainer').innerHTML = '';
-    pairCount = 0;
-    addPairRow();
-
-    submitBtn.disabled = false;
-  }
+  playBtn.addEventListener('click', function() {
+    video.play();
+    playBtn.style.display = 'none';
+  });
 </script>
 
 </body>
