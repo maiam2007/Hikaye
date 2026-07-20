@@ -4,119 +4,172 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hikaye</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Cormorant+Garamond:ital@0;1&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #FAF6EE;
-    --ink: #3B2432;
-    --ink-soft: #6E5A65;
-    --plum: #7C1657;
-    --plum-deep: #5A0F3F;
-    --gold: #C9A24B;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
-  body { display: flex; align-items: center; justify-content: center; position: relative; min-height: 100vh; padding: 24px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .lang-toggle {
-    position: fixed; top: 22px; inset-inline-start: 22px; display: flex;
-    background: #fff; border: 1px solid rgba(124,22,87,0.15); border-radius: 999px;
-    padding: 4px; gap: 2px; box-shadow: 0 2px 10px rgba(59,36,50,0.06); z-index: 10;
+  body {
+    min-height: 100vh;
+    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    background: linear-gradient(
+      to bottom,
+      #5c1f2e 0%,
+      #5c1f2e 8%,
+      #7a3245 22%,
+      #b98a94 40%,
+      #f3e6e0 58%,
+      #fdf8f0 72%,
+      #fdf8f0 100%
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    overflow: hidden;
   }
-  .lang-toggle button {
-    border: none; background: transparent; font-family: 'Inter', sans-serif;
-    font-size: 13px; font-weight: 600; letter-spacing: 0.03em; padding: 7px 14px;
-    border-radius: 999px; color: var(--ink-soft); cursor: pointer;
-    transition: background 0.25s ease, color 0.25s ease;
-  }
-  .lang-toggle button.active { background: var(--plum); color: #fff; }
 
-  .stage { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 380px; width: 100%; }
+  /* زر تبديل اللغة */
+  .langToggle {
+    position: fixed;
+    top: 20px;
+    inset-inline-end: 20px;
+    display: flex;
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 4px;
+    z-index: 10;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards;
+    animation-delay: 1.6s;
+  }
+  .langToggle button {
+    border: none;
+    background: transparent;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    color: #fdf8f0;
+  }
+  .langToggle button.active {
+    background: #fdf8f0;
+    color: #5c1f2e;
+    font-weight: 600;
+  }
 
   .logo {
-    width: 60px; height: 60px; object-fit: contain; margin-bottom: 6px;
-    opacity: 0; transform: translateY(8px) scale(0.94);
-    animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards;
-    filter: drop-shadow(0 6px 14px rgba(90,15,63,0.16));
+    width: 92px;
+    height: 92px;
+    object-fit: contain;
+    opacity: 0;
+    animation: riseIn 0.7s ease forwards;
+    animation-delay: 0.2s;
   }
+
   .wordmark {
-    width: 270px; max-width: 74vw; height: auto; margin-bottom: 16px;
-    opacity: 0; transform: translateY(8px);
-    animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.32s forwards;
+    width: 190px;
+    margin-top: 14px;
+    object-fit: contain;
+    opacity: 0;
+    animation: riseIn 0.7s ease forwards;
+    animation-delay: 0.9s;
   }
-  .hairline {
-    width: 46px; height: 1px; background: var(--gold); margin-bottom: 16px;
-    opacity: 0; animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s forwards;
+
+  .divider {
+    width: 90px;
+    height: 2px;
+    margin: 22px 0;
+    background: linear-gradient(to left, transparent, #d4af6a, transparent);
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards;
+    animation-delay: 1.5s;
   }
+
   .tagline {
-    font-family: 'Amiri', serif; font-style: italic; font-size: 15px;
-    color: var(--ink-soft); margin: 0 0 36px;
-    opacity: 0; animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.6s forwards;
+    font-size: 17px;
+    color: #5c1f2e;
+    font-weight: 500;
+    opacity: 0;
+    animation: fadeIn 0.7s ease forwards;
+    animation-delay: 1.9s;
   }
-  html[data-lang="en"] .tagline { font-family: 'Cormorant Garamond', serif; font-size: 16px; }
-
-  @keyframes rise { to { opacity: 1; transform: translateY(0) scale(1); } }
-
-  .scan-btn {
-    font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 16px; font-weight: 600;
-    letter-spacing: 0.01em; color: #fff;
-    background: linear-gradient(180deg, var(--plum), var(--plum-deep));
-    border: none; padding: 16px 46px; border-radius: 999px; cursor: pointer;
-    box-shadow: 0 10px 24px rgba(90,15,63,0.28);
-    opacity: 0; transform: translateY(10px);
-    animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.72s forwards;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  .tagline[lang="en"] {
+    font-family: 'Cormorant Garamond', serif;
+    display: none;
   }
-  html[data-lang="en"] .scan-btn { font-family: 'Inter', sans-serif; }
-  .scan-btn:active { transform: translateY(1px) scale(0.98); box-shadow: 0 6px 16px rgba(90,15,63,0.25); }
 
-  [data-i18n] { display: none; }
-  html[data-lang="ar"] [data-i18n="ar"] { display: inline; }
-  html[data-lang="en"] [data-i18n="en"] { display: inline; }
+  .startBtn {
+    margin-top: 34px;
+    padding: 14px 46px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #8a3345, #5c1f2e);
+    color: #fdf8f0;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 6px 18px rgba(92,31,46,0.35);
+    opacity: 0;
+    animation: fadeIn 0.7s ease forwards;
+    animation-delay: 2.3s;
+  }
+
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 </style>
 </head>
 <body>
 
-<div class="lang-toggle">
-  <button id="btn-ar" onclick="setLang('ar')">عربي</button>
-  <button id="btn-en" onclick="setLang('en')">EN</button>
+<div class="langToggle">
+  <button id="btnAr" class="active" onclick="setLang('ar')">عربي</button>
+  <button id="btnEn" onclick="setLang('en')">EN</button>
 </div>
 
-<div class="stage">
-  <img class="logo" src="logo.png" alt="Hikaye" />
-  <img class="wordmark" src="wordmark.png" alt="حكاية" />
+<img class="logo" src="logo.png" alt="Hikaye logo" />
+<img class="wordmark" src="wordmark.png" alt="حكاية" />
 
-  <div class="hairline"></div>
+<div class="divider"></div>
 
-  <p class="tagline">
-    <span data-i18n="ar">وجّه الكاميرا... عيشها من جديد</span>
-    <span data-i18n="en">Point your camera... relive it</span>
-  </p>
+<div class="tagline" lang="ar">وجّه الكاميرا... عيشها من جديد</div>
+<div class="tagline" lang="en">Point your camera... relive it</div>
 
-  <button class="scan-btn" onclick="startScan()">
-    <span data-i18n="ar">ابدأ المسح</span>
-    <span data-i18n="en">Start Scanning</span>
-  </button>
-</div>
+<a class="startBtn" id="startBtn" href="index.html">
+  <span lang="ar">ابدأ المسح</span>
+</a>
 
 <script>
   function setLang(lang) {
-    document.documentElement.setAttribute('data-lang', lang);
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
-    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-    localStorage.setItem('hikaye-lang', lang);
+    document.getElementById('btnAr').classList.toggle('active', lang === 'ar');
+    document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+
+    document.querySelectorAll('.tagline').forEach(el => {
+      el.style.display = (el.getAttribute('lang') === lang) ? 'block' : 'none';
+    });
+
+    document.querySelector('#startBtn span').textContent =
+      lang === 'ar' ? 'ابدأ المسح' : 'Start Scanning';
   }
 
-  setLang(localStorage.getItem('hikaye-lang') || 'ar');
-
-  function startScan() {
-    console.log('Start scanning tapped');
-  }
+  // نحافظ على رقم الفوتوبوك والكود السري (لو موجودين بالرابط) وننقلهم لصفحة index.html
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = window.location.search;
+    if (params) {
+      document.getElementById('startBtn').href = 'index.html' + params;
+    }
+  });
 </script>
 
 </body>
