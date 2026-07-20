@@ -15,11 +15,11 @@
     font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
     background: linear-gradient(
       to bottom,
-      #5c1f2e 0%,
-      #5c1f2e 8%,
-      #7a3245 22%,
-      #b98a94 40%,
-      #f3e6e0 58%,
+      #A20067 0%,
+      #A20067 8%,
+      #b03378 22%,
+      #c98aa8 40%,
+      #f0dde6 58%,
       #fdf8f0 72%,
       #fdf8f0 100%
     );
@@ -58,13 +58,13 @@
   }
   .langToggle button.active {
     background: #fdf8f0;
-    color: #5c1f2e;
+    color: #A20067;
     font-weight: 600;
   }
 
   .logo {
-    width: 92px;
-    height: 92px;
+    width: 150px;
+    height: 150px;
     object-fit: contain;
     opacity: 0;
     animation: riseIn 0.7s ease forwards;
@@ -75,6 +75,7 @@
     width: 190px;
     margin-top: 14px;
     object-fit: contain;
+    mix-blend-mode: multiply;
     opacity: 0;
     animation: riseIn 0.7s ease forwards;
     animation-delay: 0.9s;
@@ -108,7 +109,7 @@
     padding: 14px 46px;
     border: none;
     border-radius: 999px;
-    background: linear-gradient(135deg, #8a3345, #5c1f2e);
+    background: linear-gradient(135deg, #A20067, #5c1f2e);
     color: #fdf8f0;
     font-family: 'IBM Plex Sans Arabic', sans-serif;
     font-size: 16px;
@@ -163,7 +164,6 @@
       lang === 'ar' ? 'ابدأ المسح' : 'Start Scanning';
   }
 
-  // نحافظ على رقم الفوتوبوك والكود السري (لو موجودين بالرابط) وننقلهم لصفحة index.html
   window.addEventListener('DOMContentLoaded', () => {
     const params = window.location.search;
     if (params) {
