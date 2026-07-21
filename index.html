@@ -8,6 +8,59 @@ body { margin: 0; overflow: hidden; background: #000; }
 #playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
 #errorMsg, #loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
 #loadingMsg { display: flex; }
+
+#recognizedMark {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(20,20,20,0.55);
+  z-index: 998;
+  justify-content: center;
+  align-items: center;
+}
+.checkCircleWrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #8B0058;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 0 0 rgba(139,0,88,0.6);
+  animation: pulseIn 0.35s ease-out;
+}
+.checkCircleWrap svg {
+  width: 52px;
+  height: 52px;
+}
+.checkCircleWrap circle {
+  stroke: #fdf8f0;
+  stroke-width: 3;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: drawCircle 0.4s ease-out forwards;
+}
+.checkCircleWrap path {
+  stroke: #fdf8f0;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: drawCheck 0.3s ease-out 0.35s forwards;
+}
+@keyframes drawCircle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes pulseIn {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 </style>
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -17,6 +70,15 @@ body { margin: 0; overflow: hidden; background: #000; }
 
 <div id="loadingMsg">جاري التحميل...</div>
 <div id="arContainer"></div>
+
+<div id="recognizedMark">
+  <div class="checkCircleWrap">
+    <svg viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="24" fill="none"/>
+      <path d="M14 27l7 7 16-16"/>
+    </svg>
+  </div>
+</div>
 
 <div id="videoOverlay">
 <video id="myVideo" playsinline webkit-playsinline controls></video>
@@ -35,6 +97,10 @@ body { margin: 0; overflow: hidden; background: #000; }
   const video = document.querySelector('#myVideo');
   const playBtn = document.querySelector('#playBtn');
   const errorMsg = document.querySelector('#errorMsg');
+  const recognizedMark = document.querySelector('#recognizedMark');
+
+  // كم مللي ثانية تنعرض علامة "تم التعرف" قبل ما يفتح الفيديو
+  const RECOGNITION_DELAY_MS = 1300;
 
   let videoMap = {};
 
@@ -92,14 +158,27 @@ body { margin: 0; overflow: hidden; background: #000; }
 
     sceneEl.addEventListener('renderstart', function() {
       const targets = arContainer.querySelectorAll('.target');
+      let alreadyTriggered = false;
+
       targets.forEach(target => {
         target.addEventListener('targetFound', function() {
+          if (alreadyTriggered) return; // تفادي تكرار الفتح لو صار أكتر من targetFound بسرعة
           const idx = target.getAttribute('data-index');
           const url = videoMap[idx];
           if (!url) return;
-          video.src = url;
+
+          alreadyTriggered = true;
+
+          // 1) نخفي مشهد الكاميرا ونعرض علامة "تم التعرف" فوراً
           sceneEl.style.display = 'none';
-          overlay.style.display = 'flex';
+          recognizedMark.style.display = 'flex';
+
+          // 2) بعد فترة بسيطة، نخفي العلامة ونفتح الفيديو
+          setTimeout(() => {
+            recognizedMark.style.display = 'none';
+            video.src = url;
+            overlay.style.display = 'flex';
+          }, RECOGNITION_DELAY_MS);
         });
       });
     });
