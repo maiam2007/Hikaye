@@ -329,7 +329,7 @@
   }
 
   function showQrResult(bookNumber, secretKey) {
-    const url = `https://maiam2007.github.io/Hikaye/index.html?book=${bookNumber}&key=${secretKey}`;
+    const url = `https://maiam2007.github.io/Hikaye/welcome.html?book=${bookNumber}&key=${secretKey}`;
     document.getElementById('linkText').textContent = url;
     document.getElementById('qrImage').src =
       `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
