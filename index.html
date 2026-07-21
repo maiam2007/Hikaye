@@ -1,174 +1,194 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html>
 <head>
-<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hikaye</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+body { margin: 0; overflow: hidden; background: #000; }
+#videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
+#myVideo { max-width: 100%; max-height: 85vh; }
+#playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
+#errorMsg, #loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
+#loadingMsg { display: flex; }
 
-  body {
-    min-height: 100vh;
-    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
-    background: linear-gradient(
-      to bottom,
-      #8B0058 0%,
-      #8B0058 18%,
-      #b3568f 28%,
-      #ddb3cd 34%,
-      #fdf8f0 38%,
-      #fdf8f0 100%
-    );
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 60px 20px 22vh;
-    text-align: center;
-    overflow-x: hidden;
-  }
-
-  /* زر تبديل اللغة */
-  .langToggle {
-    position: fixed;
-    top: 20px;
-    inset-inline-end: 20px;
-    display: flex;
-    background: rgba(255,255,255,0.15);
-    border-radius: 999px;
-    padding: 4px;
-    z-index: 10;
-    opacity: 0;
-    animation: fadeIn 0.6s ease forwards;
-    animation-delay: 1.6s;
-  }
-  .langToggle button {
-    border: none;
-    background: transparent;
-    padding: 6px 16px;
-    border-radius: 999px;
-    font-family: 'IBM Plex Sans Arabic', sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-    color: #fdf8f0;
-  }
-  .langToggle button.active {
-    background: #fdf8f0;
-    color: #8B0058;
-    font-weight: 600;
-  }
-
-  .logo {
-    width: 250px;
-    height: 250px;
-    object-fit: contain;
-    margin-top: -30px;
-    opacity: 0;
-    animation: riseIn 0.7s ease forwards;
-    animation-delay: 0.2s;
-  }
-
-  .wordmark {
-    width: 280px;
-    margin-top: 8px;
-    object-fit: contain;
-    mix-blend-mode: multiply;
-    opacity: 0;
-    animation: riseIn 0.7s ease forwards;
-    animation-delay: 0.9s;
-  }
-
-  .divider {
-    width: 90px;
-    height: 2px;
-    margin: 10px 0;
-    background: linear-gradient(to left, transparent, #d4af6a, transparent);
-    opacity: 0;
-    animation: fadeIn 0.6s ease forwards;
-    animation-delay: 1.5s;
-  }
-
-  .tagline {
-    font-size: 17px;
-    color: #5c1f2e;
-    font-weight: 500;
-    opacity: 0;
-    animation: fadeIn 0.7s ease forwards;
-    animation-delay: 1.9s;
-  }
-  .tagline[lang="en"] {
-    font-family: 'Cormorant Garamond', serif;
-    display: none;
-  }
-
-  .startBtn {
-    margin-top: 10px;
-    padding: 14px 46px;
-    border: none;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #8B0058, #5c1f2e);
-    color: #fdf8f0;
-    font-family: 'IBM Plex Sans Arabic', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-block;
-    box-shadow: 0 6px 18px rgba(92,31,46,0.35);
-    opacity: 0;
-    animation: fadeIn 0.7s ease forwards;
-    animation-delay: 2.3s;
-  }
-
-  @keyframes riseIn {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+#recognizedMark {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(20,20,20,0.55);
+  z-index: 998;
+  justify-content: center;
+  align-items: center;
+}
+.checkCircleWrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #8B0058;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 0 0 rgba(139,0,88,0.6);
+  animation: pulseIn 0.35s ease-out;
+}
+.checkCircleWrap svg {
+  width: 52px;
+  height: 52px;
+}
+.checkCircleWrap circle {
+  stroke: #fdf8f0;
+  stroke-width: 3;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: drawCircle 0.4s ease-out forwards;
+}
+.checkCircleWrap path {
+  stroke: #fdf8f0;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: drawCheck 0.3s ease-out 0.35s forwards;
+}
+@keyframes drawCircle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes pulseIn {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 </style>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="langToggle">
-  <button id="btnAr" class="active" onclick="setLang('ar')">عربي</button>
-  <button id="btnEn" onclick="setLang('en')">EN</button>
+<div id="loadingMsg">جاري التحميل...</div>
+<div id="arContainer"></div>
+
+<div id="recognizedMark">
+  <div class="checkCircleWrap">
+    <svg viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="24" fill="none"/>
+      <path d="M14 27l7 7 16-16"/>
+    </svg>
+  </div>
 </div>
 
-<img class="logo" src="logo.png" alt="Hikaye logo" />
-<img class="wordmark" src="wordmark.png" alt="حكاية" />
-
-<div class="divider"></div>
-
-<div class="tagline" lang="ar">وجّه الكاميرا... عيشها من جديد</div>
-<div class="tagline" lang="en">Point your camera... relive it</div>
-
-<a class="startBtn" id="startBtn" href="index.html">
-  <span lang="ar">ابدأ المسح</span>
-</a>
+<div id="videoOverlay">
+<video id="myVideo" playsinline webkit-playsinline controls></video>
+<button id="playBtn">▶</button>
+</div>
+<div id="errorMsg">هذا الفوتوبوك مو موجود</div>
 
 <script>
-  function setLang(lang) {
-    document.getElementById('btnAr').classList.toggle('active', lang === 'ar');
-    document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+  const SUPABASE_URL = "https://ptzuauxjftwfsyjohogi.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0enVhdXhqZnR3ZnN5am9ob2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzMwNDgsImV4cCI6MjA5OTU0OTA0OH0.EUs3CP7zGQBj78XWRmLE97hntLKZZw7AzmUSpLTeiN4";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.querySelectorAll('.tagline').forEach(el => {
-      el.style.display = (el.getAttribute('lang') === lang) ? 'block' : 'none';
+  const loadingMsg = document.querySelector('#loadingMsg');
+  const arContainer = document.querySelector('#arContainer');
+  const overlay = document.querySelector('#videoOverlay');
+  const video = document.querySelector('#myVideo');
+  const playBtn = document.querySelector('#playBtn');
+  const errorMsg = document.querySelector('#errorMsg');
+  const recognizedMark = document.querySelector('#recognizedMark');
+
+  // كم مللي ثانية تنعرض علامة "تم التعرف" قبل ما يفتح الفيديو
+  const RECOGNITION_DELAY_MS = 1300;
+
+  let videoMap = {};
+
+  async function loadSceneFromBook() {
+    const params = new URLSearchParams(window.location.search);
+    const bookNumber = params.get('book');
+    const key = params.get('key');
+
+    if (!bookNumber || !key) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'رابط غير صحيح';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('photobooks')
+      .select('target_index, video_url, secret_key')
+      .eq('book_number', bookNumber);
+
+    if (error || !data || data.length === 0) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'هذا الفوتوبوك مو موجود';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    // التحقق من الكود السري قبل عرض أي شي
+    if (data[0].secret_key !== key) {
+      loadingMsg.style.display = 'none';
+      errorMsg.textContent = 'رابط غير صحيح';
+      errorMsg.style.display = 'flex';
+      return;
+    }
+
+    data.forEach(row => {
+      videoMap[row.target_index] = row.video_url;
     });
 
-    document.querySelector('#startBtn span').textContent =
-      lang === 'ar' ? 'ابدأ المسح' : 'Start Scanning';
+    const mindFileUrl = `${SUPABASE_URL}/storage/v1/object/public/targets/${bookNumber}.mind`;
+
+    const targetEntities = data.map(row =>
+      `<a-entity class="target" data-index="${row.target_index}" mindar-image-target="targetIndex: ${row.target_index}"></a-entity>`
+    ).join('');
+
+    arContainer.innerHTML = `
+      <a-scene mindar-image="imageTargetSrc: ${mindFileUrl};" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        ${targetEntities}
+      </a-scene>
+    `;
+
+    const sceneEl = arContainer.querySelector('a-scene');
+    loadingMsg.style.display = 'none';
+
+    sceneEl.addEventListener('renderstart', function() {
+      const targets = arContainer.querySelectorAll('.target');
+      let alreadyTriggered = false;
+
+      targets.forEach(target => {
+        target.addEventListener('targetFound', function() {
+          if (alreadyTriggered) return; // تفادي تكرار الفتح لو صار أكتر من targetFound بسرعة
+          const idx = target.getAttribute('data-index');
+          const url = videoMap[idx];
+          if (!url) return;
+
+          alreadyTriggered = true;
+
+          // 1) نخفي مشهد الكاميرا ونعرض علامة "تم التعرف" فوراً
+          sceneEl.style.display = 'none';
+          recognizedMark.style.display = 'flex';
+
+          // 2) بعد فترة بسيطة، نخفي العلامة ونفتح الفيديو
+          setTimeout(() => {
+            recognizedMark.style.display = 'none';
+            video.src = url;
+            overlay.style.display = 'flex';
+          }, RECOGNITION_DELAY_MS);
+        });
+      });
+    });
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const params = window.location.search;
-    if (params) {
-      document.getElementById('startBtn').href = 'index.html' + params;
-    }
+  loadSceneFromBook();
+
+  playBtn.addEventListener('click', function() {
+    video.play();
+    playBtn.style.display = 'none';
   });
 </script>
 
