@@ -28,6 +28,13 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
   border-radius: 12px;
   display: block;
 }
+#frameOverlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+}
 #playBtn {
   position: absolute;
   top: 50%; left: 50%;
@@ -42,6 +49,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
   box-shadow: 0 6px 18px rgba(92,31,46,0.4);
   cursor: pointer;
   padding: 0;
+  z-index: 2;
 }
 #playBtn svg {
   width: 26px;
@@ -144,6 +152,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
 <div id="videoOverlay">
   <div id="videoFrame">
     <video id="myVideo" playsinline webkit-playsinline></video>
+    <img id="frameOverlay" src="frame.png" alt="">
     <button id="playBtn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
   </div>
   <button id="backBtn">
