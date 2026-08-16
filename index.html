@@ -8,7 +8,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: #fdf8f0;
+  background: linear-gradient(to bottom, #fdf8f0 0%, #faf1f5 100%);
   z-index: 999;
   justify-content: center;
   align-items: center;
@@ -16,23 +16,22 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
 }
 #videoFrame {
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  padding: 38px;
+  box-shadow: 0 8px 24px rgba(139,0,88,0.10);
+  border-radius: 8px;
 }
 #myVideo {
-  max-width: 78vw;
-  max-height: 68vh;
+  max-width: 74vw;
+  max-height: 62vh;
   display: block;
   position: relative;
   z-index: 1;
 }
 #frameOverlay {
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 118%;
-  height: 118%;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   object-fit: contain;
   z-index: 2;
@@ -60,7 +59,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
   margin-inline-start: 4px;
 }
 #backBtn {
-  margin-top: 34px;
+  margin-top: 30px;
   padding: 12px 34px;
   border: none;
   border-radius: 999px;
