@@ -135,7 +135,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
 
 <div id="videoOverlay">
   <div id="videoFrame">
-    <video id="myVideo" playsinline webkit-playsinline controls></video>
+    <video id="myVideo" playsinline webkit-playsinline></video>
     <button id="playBtn">▶</button>
   </div>
   <button id="backBtn">
@@ -247,12 +247,14 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
 
   playBtn.addEventListener('click', function() {
     video.play();
+    video.setAttribute('controls', 'true');
     playBtn.style.display = 'none';
   });
 
   backBtn.addEventListener('click', function() {
     video.pause();
     video.src = '';
+    video.removeAttribute('controls');
     overlay.style.display = 'none';
     alreadyTriggered = false;
     if (sceneEl) sceneEl.style.display = 'block';
