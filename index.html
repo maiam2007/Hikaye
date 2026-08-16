@@ -2,10 +2,63 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-body { margin: 0; overflow: hidden; background: #000; }
-#videoOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
-#myVideo { max-width: 100%; max-height: 85vh; }
-#playBtn { position: absolute; width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%; border: none; font-size: 28px; color: #333; }
+body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', sans-serif; }
+#videoOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(to bottom, #fdf8f0 0%, #f3e6ee 100%);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+#videoFrame {
+  position: relative;
+  padding: 14px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(139,0,88,0.18);
+  border: 2px solid #e8c9db;
+}
+#myVideo {
+  max-width: 88vw;
+  max-height: 72vh;
+  border-radius: 12px;
+  display: block;
+}
+#playBtn {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px; height: 70px;
+  background: linear-gradient(135deg, #8B0058, #5c1f2e);
+  border-radius: 50%;
+  border: none;
+  font-size: 26px;
+  color: #fdf8f0;
+  box-shadow: 0 6px 18px rgba(92,31,46,0.4);
+  cursor: pointer;
+}
+#backBtn {
+  margin-top: 24px;
+  padding: 12px 34px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #8B0058;
+  border: 1.5px solid #8B0058;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#backBtn svg { width: 16px; height: 16px; fill: #8B0058; }
+
 #errorMsg, #loadingMsg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; font-family: Tahoma, sans-serif; color: #6b2737; font-size: 18px; direction: rtl; }
 #loadingMsg { display: flex; }
 
@@ -81,9 +134,16 @@ body { margin: 0; overflow: hidden; background: #000; }
 </div>
 
 <div id="videoOverlay">
-<video id="myVideo" playsinline webkit-playsinline controls></video>
-<button id="playBtn">▶</button>
+  <div id="videoFrame">
+    <video id="myVideo" playsinline webkit-playsinline controls></video>
+    <button id="playBtn">▶</button>
+  </div>
+  <button id="backBtn">
+    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    <span>مسح صورة ثانية</span>
+  </button>
 </div>
+
 <div id="errorMsg">هذا الفوتوبوك مو موجود</div>
 
 <script>
@@ -96,13 +156,15 @@ body { margin: 0; overflow: hidden; background: #000; }
   const overlay = document.querySelector('#videoOverlay');
   const video = document.querySelector('#myVideo');
   const playBtn = document.querySelector('#playBtn');
+  const backBtn = document.querySelector('#backBtn');
   const errorMsg = document.querySelector('#errorMsg');
   const recognizedMark = document.querySelector('#recognizedMark');
 
-  // كم مللي ثانية تنعرض علامة "تم التعرف" قبل ما يفتح الفيديو
   const RECOGNITION_DELAY_MS = 1300;
 
   let videoMap = {};
+  let sceneEl = null;
+  let alreadyTriggered = false;
 
   async function loadSceneFromBook() {
     const params = new URLSearchParams(window.location.search);
@@ -128,7 +190,6 @@ body { margin: 0; overflow: hidden; background: #000; }
       return;
     }
 
-    // التحقق من الكود السري قبل عرض أي شي
     if (data[0].secret_key !== key) {
       loadingMsg.style.display = 'none';
       errorMsg.textContent = 'رابط غير صحيح';
@@ -153,30 +214,28 @@ body { margin: 0; overflow: hidden; background: #000; }
       </a-scene>
     `;
 
-    const sceneEl = arContainer.querySelector('a-scene');
+    sceneEl = arContainer.querySelector('a-scene');
     loadingMsg.style.display = 'none';
 
     sceneEl.addEventListener('renderstart', function() {
       const targets = arContainer.querySelectorAll('.target');
-      let alreadyTriggered = false;
 
       targets.forEach(target => {
         target.addEventListener('targetFound', function() {
-          if (alreadyTriggered) return; // تفادي تكرار الفتح لو صار أكتر من targetFound بسرعة
+          if (alreadyTriggered) return;
           const idx = target.getAttribute('data-index');
           const url = videoMap[idx];
           if (!url) return;
 
           alreadyTriggered = true;
 
-          // 1) نخفي مشهد الكاميرا ونعرض علامة "تم التعرف" فوراً
           sceneEl.style.display = 'none';
           recognizedMark.style.display = 'flex';
 
-          // 2) بعد فترة بسيطة، نخفي العلامة ونفتح الفيديو
           setTimeout(() => {
             recognizedMark.style.display = 'none';
             video.src = url;
+            playBtn.style.display = 'flex';
             overlay.style.display = 'flex';
           }, RECOGNITION_DELAY_MS);
         });
@@ -189,6 +248,14 @@ body { margin: 0; overflow: hidden; background: #000; }
   playBtn.addEventListener('click', function() {
     video.play();
     playBtn.style.display = 'none';
+  });
+
+  backBtn.addEventListener('click', function() {
+    video.pause();
+    video.src = '';
+    overlay.style.display = 'none';
+    alreadyTriggered = false;
+    if (sceneEl) sceneEl.style.display = 'block';
   });
 </script>
 
