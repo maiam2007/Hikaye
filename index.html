@@ -36,10 +36,18 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
   background: linear-gradient(135deg, #8B0058, #5c1f2e);
   border-radius: 50%;
   border: none;
-  font-size: 26px;
-  color: #fdf8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: 0 6px 18px rgba(92,31,46,0.4);
   cursor: pointer;
+  padding: 0;
+}
+#playBtn svg {
+  width: 26px;
+  height: 26px;
+  fill: #fdf8f0;
+  margin-inline-start: 4px;
 }
 #backBtn {
   margin-top: 24px;
@@ -136,7 +144,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Tahoma', san
 <div id="videoOverlay">
   <div id="videoFrame">
     <video id="myVideo" playsinline webkit-playsinline></video>
-    <button id="playBtn">▶</button>
+    <button id="playBtn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
   </div>
   <button id="backBtn">
     <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
