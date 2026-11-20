@@ -1,3 +1,4 @@
+window.addEventListener('error', function (e) { var m = document.getElementById('loadingMsg'); if (m) m.textContent = 'خطأ: ' + e.message; });
 (function () {
   'use strict';
 
